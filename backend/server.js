@@ -8,6 +8,7 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const errorHandler = require('./src/middleware/errorHandler');
 
 const app = express();
 
@@ -28,6 +29,8 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+app.use(errorHandler);
 
 async function connectToDatabase() {
   try {
