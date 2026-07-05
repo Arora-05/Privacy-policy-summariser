@@ -1,20 +1,20 @@
-# Environment Variables & Secrets
+
 .env
 *.env
 !.env.example
 
-# Node Dependencies
+
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# System Files & OS Metadata
+
 .DS_Store
 Thumbs.db
 *.log
 
-# Editor & IDE Directories
+
 .vscode/
 .idea/
 *.suo
