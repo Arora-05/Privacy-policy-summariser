@@ -9,6 +9,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const errorHandler = require('./src/middleware/errorHandler');
+const sitesRouter = require('./src/routes/sites');
+const { startRecheckCronJob } = require('./src/jobs/recheckJob');
 
 const app = express();
 
@@ -30,6 +32,7 @@ app.get('/', (req, res) => {
   });
 });
 
+app.use('/api/sites', sitesRouter);
 app.use(errorHandler);
 
 async function connectToDatabase() {
@@ -52,6 +55,7 @@ async function bootstrapServer() {
     const serverPort = process.env.PORT || 5000;
     app.listen(serverPort, () => {
       console.log(`[Server] API server listening on port ${serverPort} in ${process.env.NODE_ENV || 'development'} mode.`);
+      startRecheckCronJob();
     });
   } catch (error) {
     console.error(`[Server Error] Fatal failure during server bootstrap: ${error.message}`);
