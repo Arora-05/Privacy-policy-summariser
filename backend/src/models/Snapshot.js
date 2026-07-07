@@ -8,12 +8,15 @@ const mongoose = require('mongoose');
 
 const summarySchema = new mongoose.Schema(
   {
+    bottomLineScore: { type: Number, required: true },
     dataCollected: { type: String, required: true },
     thirdPartySharing: { type: String, required: true },
-    retention: { type: String, required: true },
+    retention: { type: String },
+    dataRetention: { type: String },
     userRights: { type: String, required: true },
     cookies: { type: String, required: true },
-    accountDeletion: { type: String, required: true }
+    accountDeletion: { type: String, required: true },
+    notableRedFlags: { type: [String], default: [] }
   },
   { _id: false }
 );

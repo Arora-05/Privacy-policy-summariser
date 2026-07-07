@@ -13,7 +13,7 @@ function getGeminiModel() {
   }
   const genAI = new GoogleGenerativeAI(apiKey);
   return genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash'
+    model: process.env.GEMINI_MODEL || 'gemini-3.5-flash'
   });
 }
 
@@ -60,12 +60,37 @@ async function classifyPolicyDiff(diffChunks) {
       return 'cosmetic';
     }
 
-    const model = getGeminiModel();
-    const formattedChunks = formatDiffChunksForPrompt(diffChunks);
-    const prompt = buildClassificationPrompt(formattedChunks);
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GEMINI_API_KEY environment variable is not defined.');
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text();
+    const modelsToTry = [
+      process.env.GEMINI_MODEL || 'gemini-3.5-flash',
+      'gemini-flash-latest',
+      'gemini-2.5-flash'
+    ];
+
+    let responseText;
+    let lastError;
+    for (const modelName of modelsToTry) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const formattedChunks = formatDiffChunksForPrompt(diffChunks);
+        const prompt = buildClassificationPrompt(formattedChunks);
+        const result = await model.generateContent(prompt);
+        responseText = result.response.text();
+        if (responseText) break;
+      } catch (err) {
+        console.warn(`[Classifier] Model (${modelName}) busy/unavailable (${err.message.split('\n')[0]}). Trying next fallback...`);
+        lastError = err;
+      }
+    }
+
+    if (!responseText) {
+      throw lastError || new Error('All fallback models failed to classify diff.');
+    }
 
     return parseClassificationResponse(responseText);
   } catch (error) {

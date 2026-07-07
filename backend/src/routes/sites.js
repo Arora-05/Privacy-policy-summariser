@@ -36,40 +36,51 @@ async function summarizeSiteService({ policyUrl, url, name }) {
 
   if (existingSite) {
     const latestSnapshot = await Snapshot.findOne({ siteId: existingSite._id }).sort({ createdAt: -1 });
-    return {
-      isNew: false,
-      site: existingSite,
-      summary: latestSnapshot ? latestSnapshot.summary : null
-    };
+    if (latestSnapshot && latestSnapshot.summary) {
+      return {
+        isNew: false,
+        site: existingSite,
+        summary: latestSnapshot.summary
+      };
+    }
   }
 
-  const cleanedText = await scrapePolicyText(policyUrl);
+  let siteToUse = existingSite;
+  if (!siteToUse) {
+    siteToUse = new Site({
+      url: domainUrl,
+      name: siteName,
+      policyUrl: policyUrl,
+      lastCheckedAt: new Date(),
+      hasUnseenChange: false
+    });
+    await siteToUse.save();
+  } else {
+    siteToUse.lastCheckedAt = new Date();
+    if (!siteToUse.policyUrl && policyUrl) {
+      siteToUse.policyUrl = policyUrl;
+    }
+  }
+
+  const targetPolicyUrl = policyUrl || siteToUse.policyUrl;
+  const cleanedText = await scrapePolicyText(targetPolicyUrl);
   const textHash = calculateSha256(cleanedText);
   const summary = await summarizePolicyText(cleanedText);
 
-  const newSite = new Site({
-    url: domainUrl,
-    name: siteName,
-    policyUrl: policyUrl,
-    lastCheckedAt: new Date(),
-    hasUnseenChange: false
-  });
-  await newSite.save();
-
   const firstSnapshot = new Snapshot({
-    siteId: newSite._id,
+    siteId: siteToUse._id,
     hash: textHash,
     cleanedText: cleanedText,
     summary: summary
   });
   await firstSnapshot.save();
 
-  newSite.latestHash = textHash;
-  await newSite.save();
+  siteToUse.latestHash = textHash;
+  await siteToUse.save();
 
   return {
-    isNew: true,
-    site: newSite,
+    isNew: !existingSite,
+    site: siteToUse,
     summary: summary,
     snapshotId: firstSnapshot._id
   };
