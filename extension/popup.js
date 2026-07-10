@@ -61,7 +61,7 @@ function renderSummaryCard(summary) {
     'field-collected': summary.dataCollected || 'No specific data collection practices outlined.',
     'field-sharing': summary.thirdPartySharing || 'No third-party sharing disclosed.',
     'field-rights': summary.userRights || 'No user privacy rights specified.',
-    'field-retention': summary.dataRetention || 'No data retention period defined.'
+    'field-retention': summary.dataRetention || summary.retention || 'No data retention period defined.'
   };
 
   for (const [elementId, contentText] of Object.entries(fieldsMap)) {
@@ -225,25 +225,38 @@ async function initializePopup() {
 
       if (matchedSite) {
         trackedSiteData = matchedSite;
-        document.getElementById('nav-tabs').style.display = 'grid';
-        document.getElementById('status-text').textContent = 'Active';
-
-        if (matchedSite.lastCheckedAt) {
-          const checkDate = new Date(matchedSite.lastCheckedAt).toLocaleDateString();
-          document.getElementById('last-checked-text').textContent = `Checked: ${checkDate}`;
-        }
-
-        if (matchedSite.hasUnseenChange) {
-          const alertBanner = document.getElementById('alert-banner');
-          if (alertBanner) alertBanner.style.display = 'block';
-        }
-
         const detailResponse = await fetch(`${API_BASE_URL}/sites/${matchedSite._id}`);
         if (detailResponse.ok) {
           const detailData = await detailResponse.json();
-          renderSummaryCard(detailData.summary);
-          switchActiveView('view-summary');
-          return;
+          if (detailData.summary) {
+            document.getElementById('nav-tabs').style.display = 'grid';
+            document.getElementById('status-text').textContent = 'Active';
+
+            if (matchedSite.lastCheckedAt) {
+              const checkDate = new Date(matchedSite.lastCheckedAt).toLocaleDateString();
+              document.getElementById('last-checked-text').textContent = `Checked: ${checkDate}`;
+            }
+
+            if (matchedSite.hasUnseenChange) {
+              const alertBanner = document.getElementById('alert-banner');
+              if (alertBanner) alertBanner.style.display = 'block';
+            }
+
+            renderSummaryCard(detailData.summary);
+            switchActiveView('view-summary');
+            return;
+          }
+        }
+
+        // If site is seeded in DB but hasn't been summarized yet, prepopulate detected link and show Analyze card
+        if (matchedSite.policyUrl) {
+          detectedPolicyLink = matchedSite.policyUrl;
+          const urlContainer = document.getElementById('detected-url-container');
+          const urlBox = document.getElementById('detected-url-box');
+          if (urlContainer && urlBox) {
+            urlBox.textContent = detectedPolicyLink;
+            urlContainer.style.display = 'block';
+          }
         }
       }
 
