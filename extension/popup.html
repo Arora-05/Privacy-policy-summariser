@@ -1,7 +1,7 @@
 <!--
-  What it does: Defines the UI structure and styling for the Chrome extension popup, rendering summary cards and change timelines.
-  Why it exists: Provides users with an immediate, visually engaging interface to inspect privacy scores and historical updates without leaving their tab.
-  Connects to: popup.js for DOM manipulation and event handling, and Chrome extension toolbar action.
+  What it does: Defines the UI structure for the Chrome extension popup, rendering summary cards and change timelines with modern glassmorphism design.
+  Why it exists: Provides users with an immediate, visually stunning interface to inspect privacy scores and historical updates.
+  Connects to: popup.css for styles and popup.js for DOM manipulation and event handling.
 -->
 <!DOCTYPE html>
 <html lang="en">
@@ -9,418 +9,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Privacy Policy Tracker</title>
-  <style>
-    :root {
-      --bg-primary: #0f172a;
-      --bg-secondary: #1e293b;
-      --bg-card: #334155;
-      --text-primary: #f8fafc;
-      --text-secondary: #cbd5e1;
-      --text-muted: #94a3b8;
-      --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-      --accent-hover: linear-gradient(135deg, #4f46e5 0%, #9333ea 100%);
-      --danger: #ef4444;
-      --danger-bg: rgba(239, 68, 68, 0.15);
-      --success: #10b981;
-      --success-bg: rgba(16, 185, 129, 0.15);
-      --warning: #f59e0b;
-      --warning-bg: rgba(245, 158, 11, 0.15);
-      --border: rgba(255, 255, 255, 0.1);
-      --radius: 12px;
-      --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-    }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      width: 380px;
-      min-height: 480px;
-      max-height: 600px;
-      background-color: var(--bg-primary);
-      color: var(--text-primary);
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 13px;
-      line-height: 1.5;
-      overflow-x: hidden;
-      overflow-y: auto;
-    }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    ::-webkit-scrollbar-track {
-      background: var(--bg-primary);
-    }
-    ::-webkit-scrollbar-thumb {
-      background: var(--bg-card);
-      border-radius: 3px;
-    }
-
-    /* Header */
-    .header {
-      padding: 16px;
-      background: var(--bg-secondary);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .app-title {
-      font-size: 15px;
-      font-weight: 700;
-      background: var(--accent-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .domain-badge {
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      padding: 3px 8px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 600;
-      border: 1px solid var(--border);
-      max-width: 160px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Alert Banner */
-    .alert-banner {
-      display: none;
-      background: var(--danger-bg);
-      border: 1px solid var(--danger);
-      color: #fca5a5;
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 12px;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.8; }
-    }
-
-    /* Navigation Tabs */
-    .nav-tabs {
-      display: none;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      background: var(--bg-primary);
-      padding: 4px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 600;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .tab-btn.active {
-      background: var(--bg-card);
-      color: var(--text-primary);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    }
-
-    /* Content Container */
-    .content {
-      padding: 16px;
-    }
-
-    /* View States */
-    .view-section {
-      display: none;
-    }
-    .view-section.active {
-      display: block;
-      animation: fadeIn 0.25s ease-in;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* Flow A: Untracked Site */
-    .untracked-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: var(--shadow);
-    }
-
-    .untracked-title {
-      font-size: 15px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .untracked-desc {
-      color: var(--text-secondary);
-      font-size: 12px;
-    }
-
-    .url-box {
-      background: var(--bg-primary);
-      border: 1px solid var(--border);
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 11px;
-      color: var(--text-muted);
-      word-break: break-all;
-      text-align: left;
-    }
-
-    .btn-primary {
-      background: var(--accent-gradient);
-      color: #ffffff;
-      border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Flow B: Summary Card */
-    .summary-card {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .score-banner {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .score-label {
-      font-weight: 600;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    .score-value {
-      font-size: 16px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 20px;
-      background: var(--bg-card);
-    }
-
-    .summary-row {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .row-header {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-    }
-
-    .row-content {
-      color: var(--text-primary);
-      font-size: 13px;
-    }
-
-    .red-flag {
-      border-left: 3px solid var(--danger);
-    }
-    .red-flag .row-header {
-      color: #fca5a5;
-    }
-
-    /* History Timeline */
-    .timeline {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      position: relative;
-    }
-
-    .timeline::before {
-      content: '';
-      position: absolute;
-      left: 10px;
-      top: 10px;
-      bottom: 10px;
-      width: 2px;
-      background: var(--border);
-    }
-
-    .timeline-item {
-      position: relative;
-      padding-left: 30px;
-    }
-
-    .timeline-dot {
-      position: absolute;
-      left: 6px;
-      top: 4px;
-      width: 10px;
-      height: 10px;
-      border-radius: 50%;
-      background: var(--text-muted);
-      border: 2px solid var(--bg-primary);
-    }
-
-    .timeline-card {
-      background: var(--bg-secondary);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .timeline-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .timeline-date {
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .badge {
-      font-size: 10px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-      text-transform: uppercase;
-    }
-
-    .badge-more_invasive {
-      background: var(--danger-bg);
-      color: #fca5a5;
-      border: 1px solid var(--danger);
-    }
-
-    .badge-less_invasive {
-      background: var(--success-bg);
-      color: #6ee7b7;
-      border: 1px solid var(--success);
-    }
-
-    .badge-cosmetic {
-      background: var(--bg-card);
-      color: var(--text-secondary);
-      border: 1px solid var(--border);
-    }
-
-    .diff-preview {
-      font-family: monospace;
-      font-size: 11px;
-      background: var(--bg-primary);
-      padding: 8px;
-      border-radius: 6px;
-      max-height: 120px;
-      overflow-y: auto;
-      white-space: pre-wrap;
-      color: var(--text-secondary);
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 30px 10px;
-      color: var(--text-muted);
-    }
-
-    /* Loading Spinner */
-    .spinner {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .footer {
-      padding: 12px 16px;
-      border-top: 1px solid var(--border);
-      font-size: 11px;
-      color: var(--text-muted);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: var(--bg-secondary);
-    }
-  </style>
+  <link rel="stylesheet" href="popup.css">
 </head>
 <body>
 
@@ -428,20 +17,26 @@
   <header class="header">
     <div class="header-top">
       <div class="app-title">
-        <span>🛡️</span> Privacy Policy Tracker
+        <span class="title-icon">🛡️</span>
+        <span class="app-title-text">ClauseWatch AI</span>
       </div>
       <div id="domain-badge" class="domain-badge">Loading...</div>
     </div>
 
     <!-- Alert Banner for Unseen Changes -->
     <div id="alert-banner" class="alert-banner">
-      ⚠️ Policy changed since your last visit!
+      <span>⚠️</span>
+      <span>Policy changed since your last visit!</span>
     </div>
 
-    <!-- View Toggles (Summary vs History) -->
+    <!-- Segmented Navigation Toggles -->
     <nav id="nav-tabs" class="nav-tabs">
-      <button id="tab-summary" class="tab-btn active" type="button">Summary</button>
-      <button id="tab-history" class="tab-btn" type="button">Change History</button>
+      <button id="tab-summary" class="tab-btn active" type="button">
+        <span>📊</span> Summary
+      </button>
+      <button id="tab-history" class="tab-btn" type="button">
+        <span>⏱️</span> Change History
+      </button>
     </nav>
   </header>
 
@@ -451,22 +46,24 @@
     <!-- Loading State -->
     <div id="view-loading" class="view-section active">
       <div class="empty-state">
-        <div class="spinner" style="width:24px;height:24px;margin-bottom:10px;"></div>
-        <p>Inspecting site privacy practices...</p>
+        <div class="spinner" style="margin-bottom: 12px;"></div>
+        <p style="font-weight: 500; color: var(--text-main); margin-bottom: 4px;">Inspecting Privacy Practices</p>
+        <p style="font-size: 11.5px;">Scanning for AI summary & policy diffs...</p>
       </div>
     </div>
 
     <!-- Flow A: Untracked Site View -->
     <div id="view-untracked" class="view-section">
       <div class="untracked-card">
+        <div class="untracked-icon">✨</div>
         <div class="untracked-title">Site Not Tracked Yet</div>
-        <p class="untracked-desc">We haven't analyzed the privacy policy for this domain yet. Would you like our AI to summarize it now?</p>
-        <div id="detected-url-container" style="display:none; text-align:left;">
-          <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">Detected Policy Link:</div>
+        <p class="untracked-desc">We haven't analyzed the privacy policy for this domain yet. Would you like our AI to inspect and summarize it now?</p>
+        <div id="detected-url-container" style="display:none; width: 100%;">
+          <div style="font-size: 11px; font-weight: 600; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;">Detected Policy Link</div>
           <div id="detected-url-box" class="url-box"></div>
         </div>
         <button id="btn-analyze" class="btn-primary" type="button">
-          <span>✨ Analyze & Track Policy</span>
+          <span>⚡ Analyze & Track Policy</span>
         </button>
       </div>
     </div>
@@ -476,33 +73,49 @@
       <div class="summary-card">
         <!-- Score Banner -->
         <div class="score-banner">
-          <span class="score-label">Privacy Bottom-Line Score</span>
+          <div class="score-info">
+            <div class="score-icon">🛡️</div>
+            <div>
+              <div class="score-label">Bottom-Line Privacy Score</div>
+              <div class="score-subtitle">AI evaluated trust rating</div>
+            </div>
+          </div>
           <span id="field-score" class="score-value">--/10</span>
         </div>
 
         <!-- 5 Category Rows -->
         <div class="summary-row">
-          <div class="row-header">1. Data Collected</div>
+          <div class="row-header">
+            <span>📦</span> 1. Data Collected
+          </div>
           <div id="field-collected" class="row-content">--</div>
         </div>
 
         <div class="summary-row">
-          <div class="row-header">2. Third-Party Sharing</div>
+          <div class="row-header">
+            <span>🤝</span> 2. Third-Party Sharing
+          </div>
           <div id="field-sharing" class="row-content">--</div>
         </div>
 
         <div class="summary-row">
-          <div class="row-header">3. User Rights</div>
+          <div class="row-header">
+            <span>⚖️</span> 3. User Rights
+          </div>
           <div id="field-rights" class="row-content">--</div>
         </div>
 
         <div class="summary-row">
-          <div class="row-header">4. Data Retention</div>
+          <div class="row-header">
+            <span>⏳</span> 4. Data Retention
+          </div>
           <div id="field-retention" class="row-content">--</div>
         </div>
 
         <div class="summary-row red-flag">
-          <div class="row-header">5. Notable Red Flags</div>
+          <div class="row-header">
+            <span>🚨</span> 5. Notable Red Flags
+          </div>
           <div id="field-flags" class="row-content">--</div>
         </div>
       </div>
@@ -516,10 +129,13 @@
     </div>
 
   </main>
-
-  <!-- Footer -->
+  
+  <!-- Footer Section -->
   <footer class="footer">
-    <span>Status: <strong id="status-text">Active</strong></span>
+    <div class="status-indicator">
+      <span class="status-dot"></span>
+      <span>Status: <strong id="status-text" style="color: var(--text-main);">Active</strong></span>
+    </div>
     <span id="last-checked-text">--</span>
   </footer>
 
